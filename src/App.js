@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import Modal from "./components/Modal";
+import JsonModal from "./components/JsonModal";
 import axios from "axios";
 import {
   LineChart,
@@ -19,6 +20,8 @@ class App extends Component {
     this.state = {
       bookList: [],
       modal: false,
+      jsonModal: false,
+      search: "",
       activeItem: {
         time_stamp: "",
         sip_calling_party: "",
@@ -51,6 +54,21 @@ class App extends Component {
     this.setState({ modal: !this.state.modal });
   };
 
+  jsonToggle = () => {
+    this.setState({ jsonModal: !this.state.jsonModal });
+  };
+
+  handleSearch = (e) => {
+    this.setState({ search: e.target.value });
+  };
+
+  handleSearchSubmit = (e) => {
+    axios
+      .get(`/api/books?search=${this.state.search}`)
+      .then((res) => this.setState({ bookList: res.data }))
+      .catch((err) => console.log(err));
+  };
+
   handleSubmit = (item) => {
     this.toggle();
 
@@ -61,6 +79,17 @@ class App extends Component {
       return;
     }
     axios.post("/api/books/", item).then((res) => this.refreshList());
+  };
+
+  handleJsonSubmit = (items) => {
+    this.jsonToggle();
+
+    JSON.parse(items).forEach((item) => {
+      console.log(item);
+      axios.post("/api/books/", item).then((res) => this.refreshList());
+    });
+
+    this.refreshList();
   };
 
   handleDelete = (item) => {
@@ -84,6 +113,10 @@ class App extends Component {
     };
 
     this.setState({ activeItem: item, modal: !this.state.modal });
+  };
+
+  jsonCreateItems = () => {
+    this.setState({ jsonModal: !this.state.jsonModal });
   };
 
   editItem = (item) => {
@@ -158,15 +191,42 @@ class App extends Component {
           <h1 className="text-uppercase text-center my-4">My Data</h1>
           <div className="card p-3">
             <div className="row">
-              <div className="col-1"></div>
-              <div className="mb-4">
-                <button className="btn btn-primary" onClick={this.createItem}>
-                  Add Data
-                </button>
-              </div>
-              <div className="col-1"></div>
-              <div className="mb-4">
-                <button className="btn btn-success">Import JSON File</button>
+              <div className="form-group col-md-12">
+                <label for="search">Search Data</label>
+
+                <div className="row">
+                  <div className="col-md-6">
+                    <input
+                      id="search"
+                      name="search"
+                      type="text"
+                      className="form-control"
+                      onChange={this.handleSearch}
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <button
+                      className="btn btn-primary"
+                      onClick={this.handleSearchSubmit}
+                    >
+                      Search
+                    </button>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <button
+                      className="btn btn-success"
+                      onClick={this.createItem}
+                    >
+                      Add Data
+                    </button>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <button
+                      className="btn btn-success"
+                      onClick={this.jsonCreateItems}
+                    >
+                      Import JSON File
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
             <table className="table mt-5 align-items-center justify-content-center">
@@ -227,7 +287,6 @@ class App extends Component {
               width={"100%"}
               height={"400px"}
             />
-            {console.log(this.pieData())}
           </div>
 
           {this.state.modal ? (
@@ -235,6 +294,13 @@ class App extends Component {
               activeItem={this.state.activeItem}
               toggle={this.toggle}
               onSave={this.handleSubmit}
+            />
+          ) : null}
+
+          {this.state.jsonModal ? (
+            <JsonModal
+              jsonToggle={this.jsonToggle}
+              onSave={this.handleJsonSubmit}
             />
           ) : null}
         </main>
